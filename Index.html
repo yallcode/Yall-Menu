@@ -3,14 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yall Menu v3.0 - Premium</title>
+    <title>Yall Menu v3.0 - Load Free or Unlock Premium</title>
     <style>
         body {
             background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
             color: cyan;
             font-family: 'Courier New', monospace;
             text-align: center;
-            padding-top: 10%;
+            padding-top: 5%;
+            margin: 0;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
         }
         input, button {
             padding: 15px;
@@ -18,63 +24,138 @@
             font-size: 18px;
             border: none;
             border-radius: 10px;
+            width: 80%;
+            max-width: 300px;
         }
-        input { width: 300px; background: #111; color: cyan; }
+        input { 
+            background: #111; 
+            color: cyan; 
+            text-align: center;
+        }
         button {
             background: cyan;
             color: black;
             cursor: pointer;
             font-weight: bold;
+            transition: background 0.3s;
         }
         button:hover { background: #00ffff; }
+        .free-btn {
+            background: lime;
+            color: black;
+            margin-top: 20px;
+        }
+        .premium-section {
+            margin-top: 30px;
+            border-top: 2px solid cyan;
+            padding-top: 20px;
+        }
         .logo {
             font-size: 60px;
             font-weight: bold;
             text-shadow: 0 0 20px cyan;
+            margin-bottom: 10px;
         }
-        .status { margin-top: 20px; font-size: 20px; }
+        .status { 
+            margin-top: 20px; 
+            font-size: 20px; 
+            min-height: 30px;
+        }
+        .inject-notice {
+            background: rgba(0,255,0,0.1);
+            border: 1px solid lime;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <div class="logo">YALL MENU v3.0</div>
-    <p>Premium Only • GitHub Verified Keys</p>
-    <input type="text" id="keyInput" placeholder="Enter your premium key..." autocomplete="off">
-    <br>
-    <button onclick="checkKey()">UNLOCK PREMIUM</button>
-    <div class="status" id="status">Waiting for key...</div>
+    <div class="container">
+        <div class="logo">YALL MENU v3.0</div>
+        <p>Free: Basic Fly/ESP/TPs | Premium: Aimbot/Godmode + More</p>
+        
+        <button class="free-btn" onclick="loadFree()">LOAD FREE SCRIPT</button>
+        <div class="inject-notice" id="freeNotice">
+            Free menu injected! Press RightShift in-game to open. 🚀
+        </div>
+        
+        <div class="premium-section">
+            <p>Unlock Premium (GitHub Verified Keys)</p>
+            <input type="text" id="keyInput" placeholder="Enter your premium key..." autocomplete="off">
+            <br>
+            <button onclick="checkKey()">UNLOCK PREMIUM</button>
+            <div class="status" id="status">Ready for premium key...</div>
+            <div class="inject-notice" id="premiumNotice">
+                Premium unlocked & injected! Extra features loaded. 🔥
+            </div>
+        </div>
+    </div>
 
     <script>
+        // Free Script Load (Direct from your repo)
+        function loadFree() {
+            const status = document.getElementById("status");
+            const freeNotice = document.getElementById("freeNotice");
+            status.innerHTML = "Loading free Yall-Menu from GitHub...";
+            
+            // Inject the loadstring for free script
+            const script = document.createElement("script");
+            script.text = `loadstring(game:HttpGet("https://raw.githubusercontent.com/yallcode/Yall-Menu/main/YallMenu.lua"))()`;
+            document.body.appendChild(script);
+            
+            setTimeout(() => {
+                status.innerHTML = "";
+                freeNotice.style.display = "block";
+            }, 1500);
+        }
+
+        // Premium Key Check
         async function checkKey() {
             const key = document.getElementById("keyInput").value.trim();
             const status = document.getElementById("status");
+            const premiumNotice = document.getElementById("premiumNotice");
 
             if (!key) {
                 status.innerHTML = "<span style='color:red'>Enter a key first!</span>";
                 return;
             }
 
-            status.innerHTML = "Checking key on GitHub...";
+            status.innerHTML = "Verifying key on GitHub...";
 
             try {
-                const response = await fetch("https://raw.githubusercontent.com/YourGithubUsername/yall-keys/main/keys.txt");
-                const keys = await response.text();
-                
+                // Fetch keys from your yall-keys repo (update username if needed)
+                const response = await fetch("https://raw.githubusercontent.com/yallcode/yall-keys/main/keys.txt");
+                const keysText = await response.text();
+                const keys = keysText.split('\n').map(k => k.trim()).filter(k => k);
+
                 if (keys.includes(key)) {
-                    status.innerHTML = "<span style='color:lime'>KEY ACCEPTED! Loading Premium...</span>";
+                    status.innerHTML = "<span style='color:lime'>KEY VALID! Loading Premium...</span>";
                     setTimeout(() => {
-                        // Inject the real premium script
-                        const script = document.createElement("script");
-                        script.src = "https://raw.githubusercontent.com/YourGithubUsername/yall-menu-premium/main/premium.lua";
-                        document.body.appendChild(script);
-                        status.innerHTML = "Premium Injected! Press RightShift in-game.";
-                    }, 1500);
+                        // First load free if not already
+                        loadFree();
+                        // Then load premium extras
+                        const premiumScript = document.createElement("script");
+                        premiumScript.text = `loadstring(game:HttpGet("https://raw.githubusercontent.com/yallcode/yall-menu-premium/main/premium.lua"))()`;
+                        document.body.appendChild(premiumScript);
+                        
+                        setTimeout(() => {
+                            status.innerHTML = "";
+                            premiumNotice.style.display = "block";
+                        }, 1000);
+                    }, 2000);
                 } else {
-                    status.innerHTML = "<span style='color:red'>Invalid or expired key.</span>";
+                    status.innerHTML = "<span style='color:red'>Invalid key. Check your purchase.</span>";
                 }
-            } catch {
-                status.innerHTML = "<span style='color:red'>Failed to connect to GitHub.</span>";
+            } catch (error) {
+                status.innerHTML = "<span style='color:red'>GitHub fetch failed. Try again.</span>";
+                console.error("Key check error:", error);
             }
         }
+
+        // Auto-load free on page open? Uncomment if you want:
+        // window.onload = loadFree;
     </script>
 </body>
 </html>
