@@ -1,4 +1,4 @@
--- Yall-Menu v2.2 - Toggle Button + Draggable + Everything Fixed
+-- Yall-Menu v2.3 - Fixed Fly + Teleport Features + Respawn Handling
 -- Press "RightShift" to open/close the menu anytime
 
 local Players = game:GetService("Players")
@@ -9,6 +9,7 @@ local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
+local mouse = player:GetMouse()
 
 -- Variables
 local infJump = false
@@ -22,6 +23,46 @@ local menuOpen = true
 
 local connections = {}
 
+-- Helper functions
+local function getChar() return player.Character end
+local function getHum() local c = getChar() return c and c:FindFirstChildOfClass("Humanoid") end
+local function getRoot() local c = getChar() return c and c:FindFirstChild("HumanoidRootPart") end
+
+-- Teleport helpers
+local function tpToPlayer(target)
+    local root = getRoot()
+    if not root or not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then return end
+    root.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(3, 0, 0)
+end
+
+local function getClosestPlayer()
+    local root = getRoot()
+    if not root then return nil end
+    local closest, minDist = nil, math.huge
+    for _, other in ipairs(Players:GetPlayers()) do
+        if other ~= player and other.Character and other.Character:FindFirstChild("HumanoidRootPart") then
+            local dist = (root.Position - other.Character.HumanoidRootPart.Position).Magnitude
+            if dist < minDist then
+                minDist = dist
+                closest = other
+            end
+        end
+    end
+    return closest
+end
+
+local function tpRandomPlayer()
+    local others = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            table.insert(others, p)
+        end
+    end
+    if #others > 0 then
+        tpToPlayer(others[math.random(#others)])
+    end
+end
+
 -- === MAIN GUI ===
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "YallMenu"
@@ -34,7 +75,7 @@ MainFrame.Position = UDim2.new(0.5, -160, 0.1, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
-MainFrame.Draggable = true  -- DRAGGABLE
+MainFrame.Draggable = true
 MainFrame.Visible = true
 MainFrame.Parent = ScreenGui
 
@@ -63,7 +104,7 @@ local Sub = Instance.new("TextLabel", MainFrame)
 Sub.Position = UDim2.new(0,0,0,50)
 Sub.Size = UDim2.new(1,0,0,20)
 Sub.BackgroundTransparency = 1
-Sub.Text = "v2.2 - Toggle: RightShift"
+Sub.Text = "v2.3 - Toggle: RightShift • Fly Fixed + Teleports"
 Sub.TextColor3 = Color3.fromRGB(100,255,255)
 Sub.Font = Enum.Font.Gotham
 Sub.TextSize = 14
@@ -83,7 +124,7 @@ ToggleBtn.Draggable = true
 
 Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 12)
 
--- === ALL BUTTONS (Same layout as before) ===
+-- === BUTTONS ===
 local JumpToggle = Instance.new("TextButton", MainFrame)
 JumpToggle.Size = UDim2.new(0,140,0,45); JumpToggle.Position = UDim2.new(0,15,0,80)
 JumpToggle.Text = "INF JUMP: OFF"; JumpToggle.BackgroundColor3 = Color3.fromRGB(255,50,50)
@@ -106,7 +147,7 @@ Instance.new("UICorner", SpeedBox).CornerRadius = UDim.new(0,8)
 
 local NoclipToggle = Instance.new("TextButton", MainFrame)
 NoclipToggle.Size = UDim2.new(0,290,0,50); NoclipToggle.Position = UDim2.new(0,15,0,190)
-NoclipToggle.Text = "NOCLIP (Walls Only): OFF"; NoclipToggle.BackgroundColor3 = Color3.fromRGB(255,50,50)
+NoclipToggle.Text = "NOCLIP: OFF"; NoclipToggle.BackgroundColor3 = Color3.fromRGB(255,50,50)
 Instance.new("UICorner", NoclipToggle).CornerRadius = UDim.new(0,12)
 
 local FlyToggle = Instance.new("TextButton", MainFrame)
@@ -119,13 +160,38 @@ FlyBox.Size = UDim2.new(0,140,0,35); FlyBox.Position = UDim2.new(0,165,0,255)
 FlyBox.Text = "100"; FlyBox.PlaceholderText = "Fly Speed"
 Instance.new("UICorner", FlyBox).CornerRadius = UDim.new(0,8)
 
+-- Teleport Buttons
+local TPMouseBtn = Instance.new("TextButton", MainFrame)
+TPMouseBtn.Size = UDim2.new(0,140,0,45); TPMouseBtn.Position = UDim2.new(0,15,0,310)
+TPMouseBtn.Text = "TP MOUSE"; TPMouseBtn.BackgroundColor3 = Color3.fromRGB(100,150,255)
+TPMouseBtn.TextColor3 = Color3.fromRGB(255,255,255)
+TPMouseBtn.Font = Enum.Font.GothamBold
+TPMouseBtn.TextSize = 14
+Instance.new("UICorner", TPMouseBtn).CornerRadius = UDim.new(0,10)
+
+local TPNearestBtn = Instance.new("TextButton", MainFrame)
+TPNearestBtn.Size = UDim2.new(0,140,0,45); TPNearestBtn.Position = UDim2.new(0,165,0,310)
+TPNearestBtn.Text = "TP NEAREST"; TPNearestBtn.BackgroundColor3 = Color3.fromRGB(100,150,255)
+TPNearestBtn.TextColor3 = Color3.fromRGB(255,255,255)
+TPNearestBtn.Font = Enum.Font.GothamBold
+TPNearestBtn.TextSize = 14
+Instance.new("UICorner", TPNearestBtn).CornerRadius = UDim.new(0,10)
+
+local TPRandomBtn = Instance.new("TextButton", MainFrame)
+TPRandomBtn.Size = UDim2.new(0,290,0,45); TPRandomBtn.Position = UDim2.new(0,15,0,365)
+TPRandomBtn.Text = "TP RANDOM"; TPRandomBtn.BackgroundColor3 = Color3.fromRGB(100,150,255)
+TPRandomBtn.TextColor3 = Color3.fromRGB(255,255,255)
+TPRandomBtn.Font = Enum.Font.GothamBold
+TPRandomBtn.TextSize = 16
+Instance.new("UICorner", TPRandomBtn).CornerRadius = UDim.new(0,10)
+
 -- Close X
 local CloseX = Instance.new("TextButton", MainFrame)
 CloseX.Size = UDim2.new(0,35,0,35); CloseX.Position = UDim2.new(1,-45,0,10)
 CloseX.BackgroundTransparency = 1; CloseX.Text = "X"; CloseX.TextColor3 = Color3.fromRGB(255,80,80)
 CloseX.Font = Enum.Font.GothamBold; CloseX.TextSize = 20
 
--- === TOGGLE LOGIC ===
+-- === TOGGLE MENU ===
 local function toggleMenu()
     menuOpen = not menuOpen
     MainFrame.Visible = menuOpen
@@ -135,7 +201,6 @@ end
 ToggleBtn.MouseButton1Click:Connect(toggleMenu)
 CloseX.MouseButton1Click:Connect(function() MainFrame.Visible = false; ToggleBtn.Text = ">>"; menuOpen = false end)
 
--- RightShift to toggle (backup key)
 UserInputService.InputBegan:Connect(function(i, gp)
     if gp then return end
     if i.KeyCode == Enum.KeyCode.RightShift then
@@ -143,13 +208,7 @@ UserInputService.InputBegan:Connect(function(i, gp)
     end
 end)
 
--- === FEATURES (Same working code as v2.1) ===
--- (Inf Jump, Speed, Noclip, Fly - all fully functional, copy-paste from previous fixed version)
-
--- Helper
-local function getChar() return player.Character end
-local function getHum() local c = getChar() return c and c:FindFirstChildOfClass("Humanoid") end
-local function getRoot() local c = getChar() return c and c:FindFirstChild("HumanoidRootPart") end
+-- === FEATURES ===
 
 -- Inf Jump
 JumpToggle.MouseButton1Click:Connect(function()
@@ -168,7 +227,7 @@ JumpToggle.MouseButton1Click:Connect(function()
         JumpToggle.Text = "INF JUMP: OFF"; JumpToggle.BackgroundColor3 = Color3.fromRGB(255,50,50)
     end
 end)
-JumpBox.FocusLost:Connect(function() local n = tonumber(JumpBox.Text); if n and n >= 0 and n <= 300 then jumpPower = n end JumpBox.Text = jumpPower end)
+JumpBox.FocusLost:Connect(function() local n = tonumber(JumpBox.Text); if n and n >= 0 and n <= 300 then jumpPower = n end JumpBox.Text = tostring(jumpPower) end)
 
 -- Speed
 SpeedToggle.MouseButton1Click:Connect(function()
@@ -183,64 +242,131 @@ SpeedToggle.MouseButton1Click:Connect(function()
         SpeedToggle.Text = "SPEED: OFF"; SpeedToggle.BackgroundColor3 = Color3.fromRGB(255,50,50)
     end
 end)
-SpeedBox.FocusLost:Connect(function() local n = tonumber(SpeedBox.Text); if n and n >= 0 and n <= 200 then walkSpeed = n end SpeedBox.Text = walkSpeed end)
+SpeedBox.FocusLost:Connect(function() local n = tonumber(SpeedBox.Text); if n and n >= 0 and n <= 200 then walkSpeed = n end SpeedBox.Text = tostring(walkSpeed) end)
 
--- Noclip
+-- Noclip (Fixed: Walls only, no floor fall)
 NoclipToggle.MouseButton1Click:Connect(function()
     noclipping = not noclipping
     if noclipping then
         connections.noclip = RunService.Stepped:Connect(function()
-            for _, p in pairs(getChar():GetDescendants()) do
-                if p:IsA("BasePart") then p.CanCollide = false end
+            local char = getChar()
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") and part ~= getRoot() then
+                        part.CanCollide = false
+                    end
+                end
             end
-            local root = getRoot(); local hum = getHum()
-            if root and hum and hum.FloorMaterial ~= Enum.Material.Air then root.CanCollide = true end
         end)
-        NoclipToggle.Text = "NOCLIP (Walls Only): ON"; NoclipToggle.BackgroundColor3 = Color3.fromRGB(0,220,0)
+        NoclipToggle.Text = "NOCLIP: ON"; NoclipToggle.BackgroundColor3 = Color3.fromRGB(0,220,0)
     else
         if connections.noclip then connections.noclip:Disconnect() end
-        NoclipToggle.Text = "NOCLIP (Walls Only): OFF"; NoclipToggle.BackgroundColor3 = Color3.fromRGB(255,50,50)
+        NoclipToggle.Text = "NOCLIP: OFF"; NoclipToggle.BackgroundColor3 = Color3.fromRGB(255,50,50)
     end
 end)
 
--- Fly
+-- Fly (Fully fixed + respawn support)
+local function enableFly()
+    local root = getRoot()
+    if not root then return end
+    local bv = Instance.new("BodyVelocity")
+    bv.Velocity = Vector3.new(0, 0, 0)
+    bv.MaxForce = Vector3.new(90000, 90000, 90000)
+    bv.P = 1250
+    bv.Parent = root
+    local bg = Instance.new("BodyGyro")
+    bg.P = 20000
+    bg.MaxTorque = Vector3.new(90000, 90000, 90000)
+    bg.CFrame = root.CFrame
+    bg.Parent = root
+    local hum = getHum()
+    if hum then hum.PlatformStand = true end
+    connections.fly = RunService.Heartbeat:Connect(function()
+        if not root.Parent then return end
+        local hum = getHum()
+        if hum then hum.PlatformStand = true end
+        local moveDir = Vector3.new(0, 0, 0)
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += camera.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= camera.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir -= camera.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir += camera.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir -= Vector3.new(0, 1, 0) end
+        if moveDir.Magnitude > 0 then moveDir = moveDir.Unit end
+        bv.Velocity = moveDir * flySpeed
+        bg.CFrame = camera.CFrame
+    end)
+end
+
+local function disableFly()
+    if connections.fly then
+        connections.fly:Disconnect()
+        connections.fly = nil
+    end
+    local root = getRoot()
+    if root then
+        for _, obj in pairs(root:GetChildren()) do
+            if obj:IsA("BodyVelocity") or obj:IsA("BodyGyro") then
+                obj:Destroy()
+            end
+        end
+        local hum = getHum()
+        if hum then hum.PlatformStand = false end
+    end
+end
+
 FlyToggle.MouseButton1Click:Connect(function()
     flying = not flying
     if flying then
-        local root = getRoot()
-        local att0 = Instance.new("Attachment", root)
-        local att1 = Instance.new("Attachment", root)
-
-        local ap = Instance.new("AlignPosition", root); ap.Attachment0 = att0; ap.Attachment1 = att1; ap.MaxForce = 99999; ap.MaxVelocity = flySpeed; ap.Responsiveness = 200
-        local ao = Instance.new("AlignOrientation", root); ao.Attachment0 = att0; ao.Attachment1 = att1; ao.MaxTorque = 99999; ao.Responsiveness = 200
-
-        connections.fly = RunService.Heartbeat:Connect(function()
-            ao.CFrame = camera.CFrame
-            local move = Vector3.new(0,0,0)
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then move += camera.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then move -= camera.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then move -= camera.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then move += camera.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then move += Vector3.new(0,1,0) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then move -= Vector3.new(0,1,0) end
-            att1.Position = move.Unit * (flySpeed/10)
-        end)
+        enableFly()
         FlyToggle.Text = "FLY: ON"; FlyToggle.BackgroundColor3 = Color3.fromRGB(0,220,0)
     else
-        for _, obj in pairs(getRoot():GetChildren()) do
-            if obj:IsA("AlignPosition") or obj:IsA("AlignOrientation") or obj:IsA("Attachment") then obj:Destroy() end
-        end
-        if connections.fly then connections.fly:Disconnect() end
+        disableFly()
         FlyToggle.Text = "FLY: OFF"; FlyToggle.BackgroundColor3 = Color3.fromRGB(255,50,50)
     end
 end)
-FlyBox.FocusLost:Connect(function() local n = tonumber(FlyBox.Text); if n and n > 0 and n <= 500 then flySpeed = n end FlyBox.Text = flySpeed end)
+FlyBox.FocusLost:Connect(function() local n = tonumber(FlyBox.Text); if n and n > 0 and n <= 500 then flySpeed = n end FlyBox.Text = tostring(flySpeed) end)
+
+-- Teleports
+TPMouseBtn.MouseButton1Click:Connect(function()
+    if mouse.Hit.Position then
+        local root = getRoot()
+        if root then
+            root.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
+        end
+    end
+end)
+
+TPNearestBtn.MouseButton1Click:Connect(function()
+    local closest = getClosestPlayer()
+    if closest then
+        tpToPlayer(closest)
+    end
+end)
+
+TPRandomBtn.MouseButton1Click:Connect(tpRandomPlayer)
+
+-- Respawn handling
+player.CharacterRemoving:Connect(function()
+    for _, conn in pairs(connections) do
+        if conn then conn:Disconnect() end
+    end
+    connections = {}
+    disableFly()
+end)
+
+player.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    if flying then
+        enableFly()
+    end
+end)
 
 -- Notification
 game.StarterGui:SetCore("SendNotification", {
-    Title = "Yall-Menu v2.2 Loaded";
-    Text = "Toggle: RightShift or cyan button • Drag anywhere • We never left";
+    Title = "Yall-Menu v2.3 Loaded";
+    Text = "Fly fixed • Teleports added • Toggle: RightShift";
     Duration = 7;
 })
 
-print("Yall-Menu v2.2 with Toggle Button & Draggable - READY")
+print("Yall-Menu v2.3 - Full Featured & Fixed - READY 🔥")
