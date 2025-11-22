@@ -9,29 +9,53 @@
         h1 { font-size:70px; text-shadow:0 0 20px #00ffff; }
         button { margin:20px; padding:18px 50px; font-size:24px; background:#00ffff; color:black; border:none; border-radius:15px; cursor:pointer; }
         button:hover { background:#00ffaa; }
-        .loadstring { margin:30px; padding:20px; background:#000; border:2px dashed #00ffff; font-size:18px; word-break:break-all; }
         .yt { background:#ff0000; color:white; }
+        .hidden { display:none; }
+        .timer { font-size:28px; color:#00ffaa; margin:20px; }
     </style>
 </head>
 <body>
 <div class="card">
     <h1>YALL MENU v4.0</h1>
     <p>Made by <b>YallaYCode</b></p>
-    
-    <button onclick="copyLoad()">COPY LOADSTRING</button>
-    <button class="yt" onclick="window.open('https://youtube.com/@YallaYCode')">SUBSCRIBE</button>
-    
-    <div class="loadstring" id="ls">
+
+    <button class="yt" onclick="startTimer()">SUBSCRIBE FIRST</button>
+
+    <div id="timer" class="timer hidden">Waiting 30 seconds...</div>
+    <div id="countdown">30</div>
+
+    <button id="copyBtn" class="hidden" onclick="copyLoad()">COPY LOADSTRING</button>
+
+    <div class="loadstring hidden" id="ls">
         loadstring(game:HttpGet("https://raw.githubusercontent.com/yallcode/Yall-Menu/main/YallMenu.lua"))()
     </div>
-    
+
     <p id="status"></p>
 </div>
 
 <script>
+let timeLeft = 30;
+let timerId;
+
+function startTimer() {
+    document.querySelector(".yt").style.display = "none";
+    document.getElementById("timer").classList.remove("hidden");
+    
+    timerId = setInterval(() => {
+        timeLeft--;
+        document.getElementById("countdown").innerText = timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(timerId);
+            document.getElementById("timer").innerText = "Done! Here is your loadstring:";
+            document.getElementById("copyBtn").classList.remove("hidden");
+            document.getElementById("ls").classList.remove("hidden");
+        }
+    }, 1000);
+}
+
 function copyLoad() {
     navigator.clipboard.writeText(document.getElementById("ls").innerText);
-    document.getElementById("status").innerHTML = "<b style='color:lime'>Copied to clipboard!</b>";
+    document.getElementById("status").innerHTML = "<b style='color:lime'>Copied!</b>";
 }
 </script>
 </body>
