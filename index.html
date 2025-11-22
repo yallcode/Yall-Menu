@@ -1,85 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>YALL MENU v3.5 - YallaYCode</title>
+    <meta charset="UTF-8">
+    <title>YALL MENU v4.0 - YallaYCode</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Roboto+Mono&display=swap');
-        body {
-            margin: 0; height: 100vh; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            color: #00ffff; font-family: 'Roboto Mono', monospace;
-            display: flex; justify-content: center; align-items: center; text-align: center;
-        }
-        .box {
-            padding: 40px; background: rgba(10,10,20,0.95); border: 2px solid #00ffff;
-            border-radius: 20px; box-shadow: 0 0 50px rgba(0,255, c255,0.5); max-width: 560px;
-        }
-        .logo {
-            font-family: 'Orbitron', sans-serif; font-size: 64px; font-weight: 900;
-            text-shadow: 0 0 30px #00ffff; margin-bottom: 10px;
-        }
-        .btn {
-            margin: 20px 10px; padding: 16px 40px; font-size: 22px; font-weight: bold;
-            background: #00ffff; color: black; border: none; border-radius: 12px;
-            cursor: pointer; transition: 0.3s;
-        }
-        .btn:hover { background: #00ffaa; transform: scale(1.05); }
-        .btn.yt { background: #ff0000; color: white; }
-        .btn.copy { background: #00ff00; }
-        .status {
-            margin-top: 20px; font-size: 20px; min-height: 40px; font-weight: bold;
-        }
-        a { color: #00ffff; text-decoration: underline; }
+        body { margin:0; height:100vh; background:#0a0a1a; color:#00ffff; font-family:Consolas; display:flex; justify-content:center; align-items:center; text-align:center; }
+        .card { padding:50px; background:#111; border:3px solid #00ffff; border-radius:20px; box-shadow:0 0 50px #00ffff; max-width:600px; }
+        h1 { font-size:70px; text-shadow:0 0 20px #00ffff; }
+        button { margin:20px; padding:18px 50px; font-size:24px; background:#00ffff; color:black; border:none; border-radius:15px; cursor:pointer; }
+        button:hover { background:#00ffaa; }
+        .loadstring { margin:30px; padding:20px; background:#000; border:2px dashed #00ffff; font-size:18px; word-break:break-all; }
+        .yt { background:#ff0000; color:white; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <div class="logo">YALL MENU</div>
-        <p>v3.5 — Made by <a href="https://youtube.com/@YallaYCode" target="_blank">@YallaYCode</a></p>
-
-        <button class="btn copy" onclick="copyLoadstring()">
-            LOAD FREE MENU (Copies Loadstring)
-        </button>
-
-        <div style="margin:30px 0; font-size:18px;">
-            Want Premium (Aimbot, Godmode, Silent Aim)?<br>
-            <b>Task:</b> Subscribe to my YouTube → Click button below
-        </div>
-
-        <button class="btn yt" onclick="window.open('https://youtube.com/@YallaYCode','_blank')">
-            SUBSCRIBE ON YOUTUBE
-        </button>
-
-        <button class="btn" onclick="unlockPremium()">
-            I SUBSCRIBED → UNLOCK PREMIUM
-        </button>
-
-        <div class="status" id="status"></div>
+<div class="card">
+    <h1>YALL MENU v4.0</h1>
+    <p>Made by <b>YallaYCode</b></p>
+    
+    <button onclick="copyLoad()">COPY LOADSTRING</button>
+    <button class="yt" onclick="window.open('https://youtube.com/@YallaYCode')">SUBSCRIBE</button>
+    
+    <div class="loadstring" id="ls">
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/yallcode/Yall-Menu/main/YallMenu.lua"))()
     </div>
+    
+    <p id="status"></p>
+</div>
 
-    <script>
-        const LOADSTRING = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/yallcode/Yall-Menu/main/YallMenu.lua"))()';
-        const PREMIUM_URL = 'https://raw.githubusercontent.com/yallcode/yall-menu-premium/main/premium.lua';
-
-        function copyLoadstring() {
-            navigator.clipboard.writeText(LOADSTRING);
-            document.getElementById("status").innerHTML = 
-                "<span style='color:#00ff00'>Loadstring copied! Paste in your executor</span>";
-        }
-
-        function unlockPremium() {
-            document.getElementById("status").innerHTML = "Unlocking premium...";
-            // First copy free loadstring
-            navigator.clipboard.writeText(LOADSTRING);
-            setTimeout(() => {
-                const s = document.createElement("script");
-                s.text = `loadstring(game:HttpGet("${PREMIUM_URL}"))()`;
-                document.body.appendChild(s);
-                document.getElementById("status").innerHTML = 
-                    "<span style='color:lime'>PREMIUM UNLOCKED + Loadstring copied!</span>";
-            }, 800);
-        }
-    </script>
+<script>
+function copyLoad() {
+    navigator.clipboard.writeText(document.getElementById("ls").innerText);
+    document.getElementById("status").innerHTML = "<b style='color:lime'>Copied to clipboard!</b>";
+}
+</script>
 </body>
 </html>
